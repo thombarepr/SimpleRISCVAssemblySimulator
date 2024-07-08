@@ -1,0 +1,47 @@
+Demo RISC processor compiler and machine simulation using ARM instrution sets.
+RISC processor is modelled according to ARM programming model, with conditional
+exection (limited to carry and zero flag) and conditional status update (supported
+in machine model but due to ambiguous structure of status update bits compiler
+doesn't handle it). This machine supports 15 32 bits registers, with R15 used
+as program counter. As this is developed on 64 bit machine, machine has extra
+register _PC_HIGH to hold upper 32 bits of 64 bit addresses.
+
+Commands supported: mov, movw, movt, add, sub, and, orr, eor, bic, ldr, str, b
+Addressing modes: Immediate, register, register indirect.
+
+To compile and run the resulting binary:
+	build_and_run.sh 'asm file'
+	
+sum.asm (to sum first n numbers), fib (fib sequence of first n numbers returned in R3)
+are provided as example.
+
+For debugging BKPT instrution is provided, which prints R0-R15 and PSR values.
+
+Model is implemented in such way to allow adding pipelining later. For that
+purpose fetch, decode, execute, mem access and writeback are isolated functions
+which can be later added to 5 separate threads synchronized from clock thread.
+Harvard memory/bus model is assumed to allow parallel fetch and mem access stages.
+Also, data hazards can be handled by properly forwarding intermediate data in structure
+called sDecodedInstr. 
+
+Prefetch abort and data abort are handled in very basic way using while loop.
+
+Also, exception handling can be better handled to ensure graceful shutdown of the model.
+
+
+Instruction encoding:
+31 - 18   		17 - 14		13 - 10		9		 	8 - 6		     5		 4			3-0
+signed 14 bit offset	operand1	dest	      conditional	     conditional	conditional	immediate		opcode
+or immediate value      reg index	reg index    status update flag    execution condition	execution flag  address mode flag
+
+With 4 bit opcode i.e. 16 instructions and multiple addressing modes can provide enough power instruction set to do meaningful computation.
+
+
+Cache: Although currently this model doesn't assume any memory access latencies, for models expecting to be closest possible replica of physical
+	machine, latencies can be added in mem access stage.  And then caches like instruction cache can be
+	added in instruction memory access path in fetch and data cache can be modeled by adding it in memory access path
+	in mem access stage. Also, MMU can be added in both these paths to implement virtual address spaces.
+	Cache model will need to model the type VIVT, PIPT or VIPT.
+	Also, different policies such as write through policy, cache line replacement policy,
+	allocation policy need to be handled. 
+
